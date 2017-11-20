@@ -11,11 +11,11 @@ from utilities import visualization_utils as vis_util
 import time
 
 class TLClassifier(object):
-    def __init__(self):
+    def __init__(self, frozen_model):
         #TODO load classifier
 
         # provide the path to the frozen model
-        self.frozen_model = rospy.get_param('~frozen_model')
+        #self.frozen_model = rospy.get_param('~frozen_model')
         self.tf_session = None
         self.predict = None
 

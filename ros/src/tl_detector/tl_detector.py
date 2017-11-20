@@ -21,6 +21,11 @@ class TLDetector(WaypointTracker):
         WaypointTracker.__init__(self)
 
         rospy.init_node('tl_detector')
+
+        #add to load model
+        self.path = rospy.get_param('~frozen_model')
+
+
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -46,7 +51,7 @@ class TLDetector(WaypointTracker):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifier(self.path)
         self.listener = tf_ros.TransformListener()
         
         self.state = TrafficLight.UNKNOWN
