@@ -23,7 +23,7 @@ class TLDetector(WaypointTracker):
         rospy.init_node('tl_detector')
 
         #add to load model
-        self.path = rospy.get_param('~frozen_model')
+        #self.path = rospy.get_param('/frozen_model')
 
 
         self.pose = None
@@ -51,7 +51,9 @@ class TLDetector(WaypointTracker):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier(self.path)
+        #self.path = rospy.get_param('~frozen_model')
+        #self.light_classifier = TLClassifier(self.path)
+        self.light_classifier = TLClassifier()
         self.listener = tf_ros.TransformListener()
         
         self.state = TrafficLight.UNKNOWN
@@ -98,7 +100,7 @@ class TLDetector(WaypointTracker):
         # end of if self.state != state
         self.state_count += 1
     
-    FAKED_LIGHT = True
+    #FAKED_LIGHT = False
     
     def get_light_state(self, light_index):
         """Determines the current color of the traffic light
@@ -110,8 +112,8 @@ class TLDetector(WaypointTracker):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
     
         """
-        if FAKED_LIGHT:
-            return self.lights[light_index].state
+        #if FAKED_LIGHT:
+        #    return self.lights[light_index].state
         # end of if FAKED_LIGHT
     
         if(not self.has_image):
@@ -141,12 +143,17 @@ class TLDetector(WaypointTracker):
             car_position = self.get_closest_waypoint(self.pose.pose)
         # end of if (self.pose)
     
+        #print("car_position", car_position)
         #TODO find the closest visible traffic light (if one exists)
         # the index of the waypoint of the traffic light
         light_index, light_wp = self.find_closest_traffic_light(car_position)
+
+        #print("light_index", light_index)
+        #print("light_wp", light_wp)
     
-        if light_index:
+        if light_index != 'None':
             state = self.get_light_state(light_index)
+            #print("state", state)
             return light_wp, state
         # self.waypoints = None
         return -1, TrafficLight.UNKNOWN

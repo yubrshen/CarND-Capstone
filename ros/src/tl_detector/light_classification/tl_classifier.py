@@ -11,37 +11,39 @@ from utilities import visualization_utils as vis_util
 import time
 
 class TLClassifier(object):
-    def __init__(self, frozen_model):
+    def __init__(self):
         #TODO load classifier
 
         # provide the path to the frozen model
-        #self.frozen_model = rospy.get_param('~frozen_model')
+        self.frozen_model = "../../../classifier/SSD-sim"
         self.tf_session = None
         self.predict = None
 
         # define model types and variables
-        PATH_TO_LABELS = self.frozen_model + 'label_map.pbtxt'
+        PATH_TO_LABELS = self.frozen_model + '/checkpoints/label_map.pbtxt'
+        print(PATH_TO_LABELS)
         NUM_CLASSES = 4
         MODEL = self.frozen_model + '/checkpoints/frozen_inference_graph.pb'
+        print(MODEL)
 
         label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
         categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES,
                                                                     use_display_name=True)
         self.category_index = label_map_util.create_category_index(categories)
+        
+        print("the self.category_index", self.category_index)
 
         #### Build network
         self.image_np_deep = None
         self.detection_graph = tf.Graph()
 
-        # https://github.com/tensorflow/tensorflow/issues/6698
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
-        # end
 
         with self.detection_graph.as_default():
             od_graph_def = tf.GraphDef()
 
-            with tf.gfile.GFile(CKPT, 'rb') as fid:
+            with tf.gfile.GFile(MODEL, 'rb') as fid:
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
@@ -60,6 +62,8 @@ class TLClassifier(object):
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
         self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
 
+        print("WE LOADED THE MODEL")
+
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -72,6 +76,8 @@ class TLClassifier(object):
         """
         #TODO implement light color prediction
         #return TrafficLight.UNKNOWN
+
+        #print("We are getting classification here")
 
         run_network = True
 
@@ -87,16 +93,9 @@ class TLClassifier(object):
                      self.detection_classes, self.num_detections],
                     feed_dict={self.image_tensor: image_np_expanded})
 
-            # time1 = time.time()
-
-            # print("Time in milliseconds", (time1 - time0) * 1000)
-
             boxes = np.squeeze(boxes)
             scores = np.squeeze(scores)
             classes = np.squeeze(classes).astype(np.int32)
-
-            # DISTANCE TO TRAFFIC LIGHT and passing to TrafficLight thing
-            # Should be done as part of visual to avoid duplicate computation
 
             min_score_thresh = .50
             for i in range(boxes.shape[0]):
@@ -111,11 +110,13 @@ class TLClassifier(object):
                     self.current_light = TrafficLight.UNKNOWN
 
                     if class_name == 'Red':
-                        self.current_light = TrafficLight.RED
+                        self.current_light = 2
                     elif class_name == 'Green':
-                        self.current_light = TrafficLight.GREEN
+                        self.current_light = 1
                     elif class_name == 'Yellow':
-                        self.current_light = TrafficLight.YELLOW
+                        self.current_light = 3
+                    
+                    #print(self.current_light)
 
                     fx = 1345.200806
                     fy = 1353.838257
