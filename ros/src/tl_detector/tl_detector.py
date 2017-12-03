@@ -180,8 +180,26 @@ class TLDetector(WaypointTracker):
                     elif self.state_count >= STATE_COUNT_THRESHOLD:
                         self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
                         self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-                        rospy.loginfo('stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %d' %
-                                    (self.state_count, self.state, state, self.last_wp))
+                        if (state == TrafficLight.RED):
+                        	rospy.loginfo(
+                        		'RED stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %d' %
+                                (self.state_count, self.state, state, self.last_wp))
+                        # end of if (state == TrafficLight.RED)
+                        if (state == TrafficLight.GREEN):
+                        	rospy.loginfo(
+                            	'GREEN stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
+                            	(self.state_count, self.state, state, self.last_wp))
+                    	# end of if (state == TrafficLight.GREEN)
+                    	if (state == TrafficLight.YELLOW):
+                        	rospy.loginfo(
+                            	'YELLOW stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
+                            	(self.state_count, self.state, state, self.last_wp))
+                    	# end of if (state == TrafficLight.YELLOW)
+                    	if (state == TrafficLight.UNKNOWN):
+                        	rospy.loginfo(
+                            	'UNKNOWN stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
+                            	(self.state_count, self.state, state, self.last_wp))
+		    			# end of if (state == TrafficLight.UNKNOWN)
                     else:
                         if self.last_wp is not None:
                             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
