@@ -106,10 +106,8 @@ class WaypointUpdater(WaypointTracker):
                         tl_dist = (self.distance(self.last_closest_front_waypoint_index,
                                                  light_index_or_last))
                     
-                        if ((self.traffic_waypoint is not None) and
-                            (self.last_closest_front_waypoint_index <= self.traffic_waypoint) and
+                        if ((self.last_closest_front_waypoint_index <= light_index_or_last) and
                             (self.traffic_light_red or (light_index_or_last == (len(self.base_waypoints)-1)))):
-                            # tl_dist = self.distance(self.last_closest_front_waypoint_index, self.traffic_waypoint)
                             if (tl_dist < min_stop_dist):
                                 if (self.last_closest_front_waypoint_index <= light_index_or_last):
                                     final_waypoints = []
@@ -136,7 +134,7 @@ class WaypointUpdater(WaypointTracker):
                                 final_waypoints = (self.base_waypoints[
                                     self.last_closest_front_waypoint_index :
                                     (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
-                                                   if self.last_closest_front_waypoint_index < len(self.base_waypoints) #-1
+                                                   if self.last_closest_front_waypoint_index < len(self.base_waypoints) -1
                                                    else [])
                                 label = ("car index {:4} " +
                                          "light index {:4} " +
@@ -157,7 +155,7 @@ class WaypointUpdater(WaypointTracker):
                             final_waypoints = (self.base_waypoints[
                                 self.last_closest_front_waypoint_index :
                                 (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
-                                               if self.last_closest_front_waypoint_index < len(self.base_waypoints) # -1
+                                               if self.last_closest_front_waypoint_index < len(self.base_waypoints)  -1
                                                else [])
                     
                             label = ("car index {:4} " +
