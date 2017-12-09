@@ -55,7 +55,7 @@ Download the required `ssd_inception` and `Faster_RCNN` model tar.gz files and u
 [Tensorflow_Model_Zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md)
 
 ## Training the models
-We have trained both the inception and Faster_RCNN models separately for simulator and real track. The script that is used for training the models is in **train.py** under the directory `tensorflow/models/research/object_detection/train.py`.
+We have trained both the inception and Faster_RCNN models separately for simulator and real track. The script that is used for training the models is in **train.py** under the directory `tensorflow/models/research/object_detection/train.py`. And is as follows
 
 ```
 # Copyright 2017 The TensorFlow Authors. All Rights Reserved.
@@ -225,7 +225,7 @@ if __name__ == '__main__':
 ```
 
 ## Freezing the trained model for inference
-The script that is used for freezing the trained model for inference is `export_inference_graph.py` located in the directory `tensorflow/models/research/object_detection/export_inference_graph.py`. 
+The script that is used for freezing the trained model for inference is `export_inference_graph.py` located in the directory `tensorflow/models/research/object_detection/export_inference_graph.py`. And is as follows
 
 ```
 
