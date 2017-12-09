@@ -120,6 +120,9 @@ class DBWNode(object):
     
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
+        if (self.dbw_enabled):
+            self.controller.velocity_pid.reset()
+        # end of def dbw_enabled_cb(self, msg)
 
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()
