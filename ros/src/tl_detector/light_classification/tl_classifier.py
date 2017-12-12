@@ -12,7 +12,7 @@ def joinfiles(directory, filename):
     """
     chunksize = 1024
     maxchunks = 1024 * 5
-    rospy.loginfo("restoring:" + filename +" from directory:" + directory)
+    rospy.loginfo("restoring:" + filename + " from directory:" + directory)
     if os.path.exists(directory):
         if os.path.exists(filename):
             os.remove(filename)
@@ -45,8 +45,9 @@ class TLClassifier(object):
         # end of if sim
     
         model_path = curr_dir + model_folder + '/frozen_inference_graph.pb'
-        chunk_folder = curr_dir + model_folder + '/chunks'
+
         if not os.path.exists(model_path):
+            chunk_folder = curr_dir + model_folder + '/chunks'
             joinfiles(chunk_folder, model_path)
     
         self.detection_graph = tf.Graph()
