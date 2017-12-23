@@ -231,13 +231,25 @@ class GenerateDiagnostics():
             # self.waypoints.append(msg.waypoints[1])
 
             # create the polyline that defines the track
-            x = []
-            y = []
+            # collect the data, and convert the coordinate values to occupy the full space of image.
+            x, y = [], []
             for i in range(len(self.waypoints)):
                 x.append(self.waypoints[i].pose.pose.position.x)
-                y.append(self.img_rows-(self.waypoints[i].pose.pose.position.y-1000.))
-            self.XYPolyline = np.column_stack((x, y)).astype(np.int32)
+                y.append(self.waypoints[i].pose.pose.position.y)
+            x, y = np.array(x), np.array(y)
 
+            def linear_stretch(x, space, margin=0.002):
+                return (x - np.min(x))*space*(1-2*margin)/(np.max(x)-np.min(x)) + space*margin
+
+            x = linear_stretch(x, space=self.img_cols, margin=0.002)
+            y = linear_stretch(y, space=self.img_rows - 700.0, margin=0.002)
+            y = self.img_rows - y
+
+            # for i in range(len(self.waypoints)):
+            #     x.append(self.waypoints[i].pose.pose.position.x)
+            #     y.append(self.img_rows-(self.waypoints[i].pose.pose.position.y-1000.))
+
+            self.XYPolyline = np.column_stack((x, y)).astype(np.int32)
             # just need to get it once
             self.sub_waypoints.unregister()
             self.sub_waypoints = None
