@@ -218,6 +218,19 @@ class GenerateDiagnostics():
         self.vel_history.append(self.current_linear_velocity)
         self.frame_history.append(self.i)
 
+    def render_points(self, raw_xs, raw_ys):
+        """
+        render the x, and y coordinates suitable to be displayed
+        return render xs, and ys in numpy array
+        """
+        def linear_stretch(v, v_max, v_min, space, margin=0.002):
+            return (v - v_min)*space*(1 - 2*margin)/(v_max - v_min) + space*margin
+
+        xs = linear_stretch(raw_xs, v_max=self.base_x_max, v_min=self.base_x_min, space=self.img_cols, margin=0.005)
+        ys = linear_stretch(raw_ys, v_max=self.base_y_max, v_min=self.base_y_min, space=self.img_rows-500.0, margin=0.005)
+        ys = self.img_rows - ys
+        return xs, ys
+
     def waypoints_cb(self, msg):
         # DONE: Implement
         if self.waypoints is None:
@@ -238,12 +251,12 @@ class GenerateDiagnostics():
                 y.append(self.waypoints[i].pose.pose.position.y)
             x, y = np.array(x), np.array(y)
 
-            def linear_stretch(x, space, margin=0.002):
-                return (x - np.min(x))*space*(1-2*margin)/(np.max(x)-np.min(x)) + space*margin
+            self.base_x_max = np.max(x)
+            self.base_x_min = np.min(x)
+            self.base_y_max = np.max(y)
+            self.base_y_min = np.min(y)
 
-            x = linear_stretch(x, space=self.img_cols, margin=0.002)
-            y = linear_stretch(y, space=self.img_rows - 700.0, margin=0.002)
-            y = self.img_rows - y
+            x, y = self.render_points(x, y)
 
             # for i in range(len(self.waypoints)):
             #     x.append(self.waypoints[i].pose.pose.position.x)
@@ -347,9 +360,11 @@ class GenerateDiagnostics():
         color2 = (128, 0, 0)
         cv2.polylines(img, [self.XYPolyline], 0, color, size)
         lastwp = len(self.waypoints)-1
-        x = int(self.waypoints[lastwp].pose.pose.position.x)
-        y = int(self.img_rows-(self.waypoints[lastwp].pose.pose.position.y-1000.))
-        cv2.circle(img, (x, y), size2,  color2, -1)
+        # x = int(self.waypoints[lastwp].pose.pose.position.x)
+        # y = int(self.img_rows-(self.waypoints[lastwp].pose.pose.position.y-1000.))
+        xs, ys = self.render_points([(self.waypoints[lastwp].pose.pose.position.x)],
+                                    [(self.waypoints[lastwp].pose.pose.position.y)])
+        cv2.circle(img, (int(xs[0]), int(ys[0])), size2,  color2, -1)
 
     def drawFinalWaypoints(self, img, size=1, size2=15):
         for i in range(len(self.fwaypointsx)):
@@ -376,13 +391,14 @@ class GenerateDiagnostics():
                 color = (255, 255, 0)
             else:
                 color = (0, 255, 0)
-            cv2.circle(img, (int(x), int(self.img_rows-(y-1000))), size, color, -1)
-            cv2.putText(img, "%d"%(i), (int(x-10), int(self.img_rows-(y-1000)+40)), font, 1, color, 2)
+            xs, ys = self.render_points([x], [y])
+            cv2.circle(img, (int(xs[0]), int(ys[0])), size, color, -1)
+            cv2.putText(img, "%d"%(i), (int(xs[0]-10), int(ys[0]+40)), font, 1, color, 2)
 
     def drawCurrentPos(self, img, size=10):
         color = (255, 255, 255)
-        cv2.circle(img, (int(self.position.x),
-                         int(self.img_rows-(self.position.y-1000))), size, color, -1)
+        xs, ys = self.render_points([self.position.x], [self.position.y])
+        cv2.circle(img, (int(xs[0]), int(ys[0])), size, color, -1)
 
     def loop(self):
         # only check once a updateRate time in milliseconds...
