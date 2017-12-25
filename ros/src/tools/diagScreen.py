@@ -291,7 +291,8 @@ class GenerateDiagnostics():
         fs = []
         for i in range(len(msg.waypoints)):
             fx.append(float(msg.waypoints[i].pose.pose.position.x))
-            fy.append(self.img_rows-(float(msg.waypoints[i].pose.pose.position.y)-1000.))
+            #fy.append(self.img_rows-(float(msg.waypoints[i].pose.pose.position.y)-1000.))
+            fy.append(float(msg.waypoints[i].pose.pose.position.y))
             fs.append(int(msg.waypoints[i].twist.twist.linear.x/(self.restricted_speed*MPS)*255))
         self.fwaypointsx = fx
         self.fwaypointsy = fy
@@ -367,18 +368,22 @@ class GenerateDiagnostics():
         cv2.circle(img, (int(xs[0]), int(ys[0])), size2,  color2, -1)
 
     def drawFinalWaypoints(self, img, size=1, size2=15):
+        xs, ys = self.render_points(self.fwaypointsx, self.fwaypointsy)
         for i in range(len(self.fwaypointsx)):
             if self.fwaypointss[i] > 0:
                 color = (0, 192, 0)
             else:
                 color = (192, 0, 0)
-            cv2.circle(img, (int(self.fwaypointsx[i]), int(self.fwaypointsy[i])), size, color, -1)
-        if len(self.fwaypointsx) > 0:
+            # cv2.circle(img, (int(self.fwaypointsx[i]), int(self.fwaypointsy[i])), size, color, -1)
+            cv2.circle(img, (int(xs[i]), int(ys[i])), size, color, -1)
+        # if len(self.fwaypointsx) > 0:
+        if len(self.fwaypointss) > 0:  # change fwaypointsx to fwaypointss as it makes more sense
             if self.fwaypointss[i] > 0:
                 color = (0, 192, 0)
             else:
                 color = (192, 0, 0)
-            cv2.circle(img, (int(self.fwaypointsx[0]), int(self.fwaypointsy[0])), size2, color, -1)
+            # cv2.circle(img, (int(self.fwaypointsx[0]), int(self.fwaypointsy[0])), size2, color, -1)
+            cv2.circle(img, (int(xs[0]), int(ys[0])), size2, color, -1)
 
     def drawTrafficLights(self, img, size=10):
         font = cv2.FONT_HERSHEY_COMPLEX
