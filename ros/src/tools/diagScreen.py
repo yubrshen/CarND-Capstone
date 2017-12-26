@@ -357,7 +357,7 @@ class GenerateDiagnostics():
         return dist
 
     def drawWaypoints(self, img, size=5, size2=10):
-        color = (128, 128, 128)
+        color = (58, 58, 58)
         color2 = (128, 0, 0)
         cv2.polylines(img, [self.XYPolyline], 0, color, size)
         lastwp = len(self.waypoints)-1
@@ -367,19 +367,22 @@ class GenerateDiagnostics():
                                     [(self.waypoints[lastwp].pose.pose.position.y)])
         cv2.circle(img, (int(xs[0]), int(ys[0])), size2,  color2, -1)
 
-    def drawFinalWaypoints(self, img, size=1, size2=15):
+    def drawFinalWaypoints(self, img, size=15, size2=20):  # size2 changed from 15
         xs, ys = self.render_points(self.fwaypointsx, self.fwaypointsy)
         for i in range(len(self.fwaypointsx)):
             if self.fwaypointss[i] > 0:
-                color = (0, 192, 0)
+                #color = (0, 192, 0)
+                color = (0, 0, 255)
             else:
                 color = (192, 0, 0)
             # cv2.circle(img, (int(self.fwaypointsx[i]), int(self.fwaypointsy[i])), size, color, -1)
+            #cv2.circle(img, (int(xs[i]), int(ys[i])), size, color, -1)
             cv2.circle(img, (int(xs[i]), int(ys[i])), size, color, -1)
         # if len(self.fwaypointsx) > 0:
         if len(self.fwaypointss) > 0:  # change fwaypointsx to fwaypointss as it makes more sense
             if self.fwaypointss[i] > 0:
-                color = (0, 192, 0)
+                #color = (0, 192, 0)
+                color = (0, 0, 255)
             else:
                 color = (192, 0, 0)
             # cv2.circle(img, (int(self.fwaypointsx[0]), int(self.fwaypointsy[0])), size2, color, -1)
