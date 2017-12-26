@@ -2,6 +2,6 @@
 <launch>
   <node pkg="waypoint_updater" type="waypoint_updater.py" output="screen" name="waypoint_updater">
     <param name="loop_freq" value="50" />
-    <param name="SAFE_DIST" value="5" />
+    <param name="SAFE_DIST" value="0" />
   </node>
 </launch>

@@ -7,7 +7,7 @@
     <include file="$(find tl_detector)/launch/tl_detector.launch"/>
 
     <!--Waypoint Updater Node -->
-    <include file="$(find waypoint_updater)/launch/waypoint_updater.launch"/>
+    <include file="$(find waypoint_updater)/launch/waypoint_updater_church_lot.launch"/>
 
     <!--Waypoint Loader -->
     <include file="$(find waypoint_loader)/launch/waypoint_loader_churchlot.launch"/>
