@@ -73,7 +73,7 @@ class WaypointTracker(object):
         self.lights_to_waypoints = []  # The list of the waypoint index of the traffic lights
         self.waypoint_to_light = None
 
-        self.last_closest_front_waypoint_index = 0
+        self.car_index = 0
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
@@ -176,10 +176,14 @@ class WaypointTracker(object):
             yaw = get_yaw(current_orientation)
     
             # Compute the waypoints ahead of the current_pose
-    
+            SUFFICIENT_FORWARD_DELTA = 0.0  # the next waypoint should be sufficiently forward
+            # tried to making SUFFICIENT_FORWARD_DELTA 0.3,
+            # then it could correct the problem of off track but would run through red lights
+            # before SUFFICIENT_FORWARD_DELTA = 0.0
             local_x = -1
-            i = self.last_closest_front_waypoint_index - 1
-            while (((i+1) < (self.base_waypoints_num-1)) and (local_x <= 0)):
+            i = self.car_index - 1 if self.car_index is not None else -1
+            while (((i+1) < (self.base_waypoints_num-1)) and
+                   (local_x <= SUFFICIENT_FORWARD_DELTA)):
                 i = (i + 1) # % self.base_waypoints_num
                 # rospy.loginfo('index of i, searching for the nearest waypoint in front: %r' % i)
                 try:
@@ -193,9 +197,10 @@ class WaypointTracker(object):
                 local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                                         w_pos.x, w_pos.y)
             # end of while (local_x <= 0)
-            self.last_closest_front_waypoint_index = i
-            # make the update last_closest_front_waypoint_index atomic with the search of the next one.
-            return i
+            self.car_index = i
+            # make the update car_index atomic with the search of the next one.
+            return (i, local_x, local_y)
+            # use local_x, and y to indicate the position relative to the current pose
         # end of if self.base_waypoints_num is not None
         return None
 

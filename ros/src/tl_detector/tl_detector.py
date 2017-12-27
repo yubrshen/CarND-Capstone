@@ -115,10 +115,12 @@ class TLDetector(WaypointTracker):
         if ((self.base_waypoints is not None) and
             (self.waypoint_to_light is not None) and
             (self.pose is not None)):
-            self.car_index = self.get_closest_waypoint(self.pose.pose)
+            tmp = self.get_closest_waypoint(self.pose.pose)
+            self.car_index, local_x, local_y = tmp if tmp else (None, None, None)
+    
             # DONE find the closest visible traffic light (if one exists)
             # the index of the waypoint of the traffic light
-            light_index, light_wp = self.waypoint_to_light[self.car_index]
+            light_index, light_wp = self.waypoint_to_light[self.car_index] if self.car_index is not None else (None, None)
             if light_wp is None:
                 return light_wp, TrafficLight.UNKNOWN
             # end of if light_wp is None
