@@ -53,6 +53,7 @@ class DBWNode(object):
         self.max_vel_mps = rospy.get_param('waypoint_loader/velocity')*MPH_to_MPS
         self.loop_freq = rospy.get_param('~loop_freq', 2)
         # the frequency to process vehicle messages
+        self.dt = 1. / self.loop_freq
 
         self.desired_velocity, self.current_velocity = None, None
 
@@ -74,7 +75,8 @@ class DBWNode(object):
                                           wheel_base=self.wheel_base,
                                           steer_ratio=self.steer_ratio,
                                           max_lat_accel=self.max_lat_accel,
-                                          max_steer_angle=self.max_steer_angle)
+                                          max_steer_angle=self.max_steer_angle,
+                                          sample_period=self.dt)
                                           # min_speed=self.min_speed,
                                           # ,
                                           # max_braking_percentage=self.max_braking_percentage,
@@ -94,7 +96,6 @@ class DBWNode(object):
 
     def loop(self):
         rate = rospy.Rate(self.loop_freq) # from 50Hz to 2Hz
-        dt = 1. / self.loop_freq
         while not rospy.is_shutdown():
             if self.desired_velocity and self.current_velocity:
                 # DONE: Get predicted throttle, brake, and steering using `twist_controller`
@@ -102,7 +103,7 @@ class DBWNode(object):
                 if self.dbw_enabled:
                     throttle, brake, steering = self.controller.control(self.desired_velocity,
                                                                         self.current_velocity,
-                                                                        dt)
+                                                                        self.dt)
                     self.publish(throttle, brake, steering)
                 # end of self.dbw_enabled
                 self.desired_velocity, self.current_velocity = None, None
@@ -120,8 +121,9 @@ class DBWNode(object):
     
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
-        if (self.dbw_enabled):
-            self.controller.velocity_pid.reset()
+        #if (self.dbw_enabled):
+        self.controller.velocity_pid.reset()
+        self.controller.lowpass_filter.reset()
         # end of def dbw_enabled_cb(self, msg)
 
     def publish(self, throttle, brake, steer):

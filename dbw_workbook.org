@@ -293,7 +293,8 @@ This is similar to ThrottleCmd, but with some additional/different fields.
                                             wheel_base=self.wheel_base,
                                             steer_ratio=self.steer_ratio,
                                             max_lat_accel=self.max_lat_accel,
-                                            max_steer_angle=self.max_steer_angle)
+                                            max_steer_angle=self.max_steer_angle,
+                                            sample_period=self.dt)
                                             # min_speed=self.min_speed,
                                             # ,
                                             # max_braking_percentage=self.max_braking_percentage,
@@ -309,7 +310,6 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
       def loop(self):
           rate = rospy.Rate(self.loop_freq) # from 50Hz to 2Hz
-          dt = 1. / self.loop_freq
           while not rospy.is_shutdown():
               if self.desired_velocity and self.current_velocity:
                   <<control_logic>>
@@ -337,7 +337,7 @@ In the context of loop and executed once a rate period, to determine the command
   if self.dbw_enabled:
       throttle, brake, steering = self.controller.control(self.desired_velocity,
                                                           self.current_velocity,
-                                                          dt)
+                                                          self.dt)
       self.publish(throttle, brake, steering)
   # end of self.dbw_enabled
  #+END_SRC
@@ -378,8 +378,10 @@ It causes problem that the car would not be able to come to full stop at the tra
                    brake_deadband, decel_limit, accel_limit,
                    wheel_radius, wheel_base,
                    steer_ratio, max_lat_accel,
-                   max_steer_angle):
+                   max_steer_angle,
+                   sample_period):
           # init members
+          self.sample_time = sample_period # 0.03 based on observation the interval is always around 0.03 seconds
           self.vehicle_mass = vehicle_mass
           self.fuel_capacity = fuel_capacity
           self.brake_deadband = brake_deadband
@@ -396,6 +398,7 @@ It causes problem that the car would not be able to come to full stop at the tra
                                   mn=decel_limit, mx=accel_limit)
           self.yaw_controller = YawController(wheel_base, steer_ratio, 1,
                                               max_lat_accel, max_steer_angle)
+          self.lowpass_filter = LowPassFilter(tau=0.5, ts=0.1) # tau = 0.15 self.sample_time = 0.03 or self.sample_period
 
       def control(self, twist, current_velocity, dt):
           """
@@ -410,9 +413,23 @@ It causes problem that the car would not be able to come to full stop at the tra
           # Verified with casual running the simulator, it showed no negative impact.
 
           acceleration = self.velocity_pid.step(velocity_cte, dt)
-          steer = self.yaw_controller.get_steering(twist.twist.linear.x,
-                                                   twist.twist.angular.z,
-                                                   current_velocity.twist.linear.x)
+
+          # desired_steer = self.yaw_controller.get_steering(
+          #     twist.twist.linear.x,
+          #     twist.twist.angular.z,
+          #     current_velocity.twist.linear.x)
+          # current_steer = self.yaw_controller.get_steering(
+          #     twist.twist.linear.x,
+          #     current_velocity.twist.angular.z,
+          #     current_velocity.twist.linear.x)
+
+          steer_delta = self.yaw_controller.get_steering(
+              twist.twist.linear.x,
+              twist.twist.angular.z, # - current_velocity.twist.angular.z,
+              current_velocity.twist.linear.x)
+
+          # steer = self.lowpass_filter.filt(desired_steer - current_steer)
+          steer = self.lowpass_filter.filt(steer_delta)
 
           throttle = 0.0
           brake = 0.0
@@ -598,8 +615,9 @@ Place the control logic in twist_cmd_cb to save CPU load.
 
   def dbw_enabled_cb(self, msg):
       self.dbw_enabled = msg.data
-      if (self.dbw_enabled):
-          self.controller.velocity_pid.reset()
+      #if (self.dbw_enabled):
+      self.controller.velocity_pid.reset()
+      self.controller.lowpass_filter.reset()
       # end of def dbw_enabled_cb(self, msg)
 #+END_SRC
 
@@ -664,6 +682,7 @@ The parameters might be needed for vehicle commands.
   self.max_vel_mps = rospy.get_param('waypoint_loader/velocity')*MPH_to_MPS
   self.loop_freq = rospy.get_param('~loop_freq', 2)
   # the frequency to process vehicle messages
+  self.dt = 1. / self.loop_freq
 #+END_SRC
 
 ** preamble

@@ -861,6 +861,9 @@ endif
       # adjust the angular velocity for final_waypoints[0]
       # in order to return to the track when the current pose is off track
       final_waypoints[0].twist.twist.angular.z = math.atan2(local_y, local_x)
+      turning_coff = 1.0
+      final_waypoints[0].twist.twist.linear.x = ( # reduce the speed proportional to the offset angle
+          final_waypoints[0].twist.twist.linear.x*(1.0/(1+turning_coff*abs(final_waypoints[0].twist.twist.angular.z))))
 
       # publish to /final_waypoints, need to package final_waypoints into Lane message
       publish_Lane(self.final_waypoints_pub, final_waypoints)

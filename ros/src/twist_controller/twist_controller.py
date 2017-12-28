@@ -12,8 +12,10 @@ class TwistController(object):
                  brake_deadband, decel_limit, accel_limit,
                  wheel_radius, wheel_base,
                  steer_ratio, max_lat_accel,
-                 max_steer_angle):
+                 max_steer_angle,
+                 sample_period):
         # init members
+        self.sample_time = sample_period # 0.03 based on observation the interval is always around 0.03 seconds
         self.vehicle_mass = vehicle_mass
         self.fuel_capacity = fuel_capacity
         self.brake_deadband = brake_deadband
@@ -30,6 +32,7 @@ class TwistController(object):
                                 mn=decel_limit, mx=accel_limit)
         self.yaw_controller = YawController(wheel_base, steer_ratio, 1,
                                             max_lat_accel, max_steer_angle)
+        self.lowpass_filter = LowPassFilter(tau=0.5, ts=0.1) # tau = 0.15 self.sample_time = 0.03 or self.sample_period
 
     def control(self, twist, current_velocity, dt):
         """
@@ -44,9 +47,23 @@ class TwistController(object):
         # Verified with casual running the simulator, it showed no negative impact.
 
         acceleration = self.velocity_pid.step(velocity_cte, dt)
-        steer = self.yaw_controller.get_steering(twist.twist.linear.x,
-                                                 twist.twist.angular.z,
-                                                 current_velocity.twist.linear.x)
+
+        # desired_steer = self.yaw_controller.get_steering(
+        #     twist.twist.linear.x,
+        #     twist.twist.angular.z,
+        #     current_velocity.twist.linear.x)
+        # current_steer = self.yaw_controller.get_steering(
+        #     twist.twist.linear.x,
+        #     current_velocity.twist.angular.z,
+        #     current_velocity.twist.linear.x)
+
+        steer_delta = self.yaw_controller.get_steering(
+            twist.twist.linear.x,
+            twist.twist.angular.z, # - current_velocity.twist.angular.z,
+            current_velocity.twist.linear.x)
+
+        # steer = self.lowpass_filter.filt(desired_steer - current_steer)
+        steer = self.lowpass_filter.filt(steer_delta)
 
         throttle = 0.0
         brake = 0.0
