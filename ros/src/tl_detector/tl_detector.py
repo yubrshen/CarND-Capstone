@@ -207,13 +207,13 @@ class TLDetector(WaypointTracker):
         # end of if self.car_index is None
     
         # the index of the waypoint of the traffic light
-        light_index, light_wp = self.waypoint_to_light[self.car_index] if self.car_index is not None else (None, None)
+        light_index, light_wp_index = self.waypoint_to_light[self.car_index] if self.car_index is not None else (None, None)
     
-        if light_index is None:
+        if light_wp_index is None:
             return None
-        # end if light_index is None
+        # end if light_wp_index is None
     
-        return self.distance(self.car_index, light_index)
+        return self.distance(self.car_index, light_wp_index)
 
     def loop(self):
         while not rospy.is_shutdown():
@@ -235,8 +235,10 @@ class TLDetector(WaypointTracker):
                         # end of if (dist and (dist < self.admissible_distance_for_image))
                     else:           # self.image_subscriber is not None
                         if ((dist is None) or (self.admissible_distance_for_image <= dist)):
-                            self.image_subscriber.unregister()
-                            self.image_subscriber = None
+                            if self.image_subscriber:
+                                self.image_subscriber.unregister()
+                                self.image_subscriber = None
+                            # end of if self.image_subscriber
                         # end of if ((dist is None) or (self.admissible_distance_for_image <= dist))
                     # end of if (self.image_subscriber is None)
                 # end of if self.camera_image is not None
