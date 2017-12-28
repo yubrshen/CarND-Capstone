@@ -2,6 +2,8 @@
 <launch>
     <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node">
       <param name="traffic_light_classifier_sim" value="false" type="bool"/>
+      <param name="loop_freq" value="10" />
+      <param name="admissible_distance_for_image" value="80" />
     </node>
     <node pkg="tl_detector" type="light_publisher.py" name="light_publisher" output="screen" cwd="node"/>
 </launch>

@@ -96,11 +96,16 @@ class WaypointUpdater(WaypointTracker):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(self.loop_freq)
+        rate = rospy.Rate(2)                # in initialization loop less frequent
         while not rospy.is_shutdown():
             if not self.ready:
+                import time
+                start_time = time.time()
                 self.preprocess()
+                spent_time = time.time() - start_time
+                rospy.loginfo("The time of preprocess: {}".format(int(spent_time)))
             else:
+                rate = rospy.Rate(self.loop_freq)
                 if self.base_waypoints is not None and self.pose is not None:
                     # rospy.loginfo(("the number of elements in self.base_waypoints: {}"+
                     #               " before accessing in get car index").format(len(self.base_waypoints)))
@@ -172,9 +177,9 @@ class WaypointUpdater(WaypointTracker):
                         # adjust the angular velocity for final_waypoints[0]
                         # in order to return to the track when the current pose is off track
                         final_waypoints[0].twist.twist.angular.z = math.atan2(local_y, local_x)
-                        turning_coff = 1.0
-                        final_waypoints[0].twist.twist.linear.x = ( # reduce the speed proportional to the offset angle
-                            final_waypoints[0].twist.twist.linear.x*(1.0/(1+turning_coff*abs(final_waypoints[0].twist.twist.angular.z))))
+                        #turning_coff = 1.0
+                        # final_waypoints[0].twist.twist.linear.x = ( # reduce the speed proportional to the offset angle
+                        #     final_waypoints[0].twist.twist.linear.x*(1.0/(1+turning_coff*abs(final_waypoints[0].twist.twist.angular.z))))
                     
                         # publish to /final_waypoints, need to package final_waypoints into Lane message
                         publish_Lane(self.final_waypoints_pub, final_waypoints)

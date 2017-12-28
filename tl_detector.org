@@ -59,7 +59,11 @@
 
        <<image_color_cb>>
 
+       <<process_camera_image>>
+
        <<process_traffic_lights>>
+
+       <<distance_to_next_light>>
 
        <<loop>>
 
@@ -121,7 +125,7 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
   rely on the position of the light and the camera image to predict it.
   '''
   sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_array_cb)
-  sub6 = rospy.Subscriber('/image_color', Image, self.image_color_cb)
+  self.image_subscriber = None
 #+END_SRC
 
 ** traffic_light_initialization
@@ -209,7 +213,6 @@ when the traffic light color is not red, report the negative of the waypoint ind
               msg (Image): image from car-mounted camera
 
       """
-      self.has_image = True
       self.camera_image = msg
 #+END_SRC
 
@@ -218,53 +221,71 @@ when the traffic light color is not red, report the negative of the waypoint ind
 #+NAME:loop
 #+BEGIN_SRC python :noweb tangle :tangle
   def loop(self):
-      rate = rospy.Rate(self.loop_freq)
       while not rospy.is_shutdown():
+          rate = rospy.Rate(2)                # in initialization loop less frequent
           if not self.ready:
+              import time
+              start_time = time.time()
               self.preprocess()
+              rospy.loginfo("preprocess in tl_detector: {}".format(time.time()-start_time))
           else:
+              rate = rospy.Rate(self.loop_freq)
               if self.camera_image is not None:
-                  light_wp, state = self.process_traffic_lights()
-                  '''
-                      Publish upcoming red lights at camera frequency.
-                      Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-                      of times till we start using it. Otherwise the previous stable state is
-                      used.
-                      '''
-                  # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
-                  if (self.state is None) or (self.state != state):  # state changed
-                      # rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %r' %
-                      #               (self.state_count, self.state, state, light_wp))
-                      rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; changed: state or traffic light index".format(
-                          color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp))
-
-                      self.state_count = 0
-                      self.state = state
-                  elif (self.state_count >= STATE_COUNT_THRESHOLD) and light_wp is not None:
-                      if (state != TrafficLight.UNKNOWN):
-                          # rospy.loginfo(
-                          #     'stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
-                          #     (self.state_count, self.state, state, self.last_wp))
-                          self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
-                          self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-                          rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; stable; reporting {}".format(
-                              color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
-
-                      # end of if (state == TrafficLight.RED)
-                  else:
-                      if self.last_wp is not None:
-                          self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-                      # end of if self.last_wp is not None
-                      # rospy.loginfo('not enough state change: old state: %r; keep publish the old traffic_waypoint: %r' % (self.state, self.last_wp))
-                      rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; not yet stable: reporting last state and light traffic index, reporting {}".format(
-                          color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
-
-                  # end of if (self.state is None) or (self.state != state)
-                  self.state_count += 1
-                  self.camera_image = None
+                  self.process_camera_image()
+              else:               # self.camera_image is None
+                  dist = self.distance_to_next_light()
+                  if (self.image_subscriber is None):
+                      if (dist and (dist < self.admissible_distance_for_image)):
+                          self.image_subscriber = rospy.Subscriber('/image_color', Image, self.image_color_cb)
+                      # end of if (dist and (dist < self.admissible_distance_for_image))
+                  else:           # self.image_subscriber is not None
+                      if ((dist is None) or (self.admissible_distance_for_image <= dist)):
+                          self.image_subscriber.unregister()
+                          self.image_subscriber = None
+                      # end of if ((dist is None) or (self.admissible_distance_for_image <= dist))
+                  # end of if (self.image_subscriber is None)
               # end of if self.camera_image is not None
           rate.sleep()
       # end of while not rospy.is_shutdow()
+#+END_SRC
+
+** process_camara_image
+
+#+NAME:process_camera_image
+#+BEGIN_SRC python :noweb tangle :tangle
+  def process_camera_image(self):
+      light_wp, state = self.process_traffic_lights()
+      '''
+          Publish upcoming red lights at camera frequency.
+          Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+          of times till we start using it. Otherwise the previous stable state is
+          used.
+          '''
+      # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
+      if (self.state is None) or (self.state != state):  # state changed
+          rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; changed: state or traffic light index".format(
+              color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp))
+
+          self.state_count = 0
+          self.state = state
+      elif (self.state_count >= STATE_COUNT_THRESHOLD) and light_wp is not None:
+          if (state != TrafficLight.UNKNOWN):
+              self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
+              self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+              rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; stable; reporting {}".format(
+                  color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
+
+          # end of if (state == TrafficLight.RED)
+      else:
+          if self.last_wp is not None:
+              self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+          # end of if self.last_wp is not None
+          rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; not yet stable: reporting last state and light traffic index, reporting {}".format(
+              color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
+
+      # end of if (self.state is None) or (self.state != state)
+      self.state_count += 1
+      self.camera_image = None
 #+END_SRC
 
 ** process_traffic_lights
@@ -326,6 +347,37 @@ when the traffic light color is not red, report the negative of the waypoint ind
           # (self.waypoint_to_light is not None) and
           # (self.pose is not None))
       return None, TrafficLight.UNKNOWN
+#+END_SRC
+
+
+** distance_to_next_light()
+
+#+NAME:distance_to_next_light
+#+BEGIN_SRC python :noweb tangle :tangle
+  def distance_to_next_light(self):
+      if ((self.base_waypoints is None) or
+          (self.waypoint_to_light is None) or
+          (self.pose is None)):
+          return None
+      # if ((self.base_waypoints is None) or
+      # (self.waypoint_to_light is None) or
+      # (self.pose is None))
+
+      tmp = self.get_closest_waypoint(self.pose.pose)
+      self.car_index, local_x, local_y = tmp if tmp else (None, None, None)
+
+      if self.car_index is None:
+          return None
+      # end of if self.car_index is None
+
+      # the index of the waypoint of the traffic light
+      light_index, light_wp = self.waypoint_to_light[self.car_index] if self.car_index is not None else (None, None)
+
+      if light_index is None:
+          return None
+      # end if light_index is None
+
+      return self.distance(self.car_index, light_index)
 #+END_SRC
 
 ** obsolete: find-closest-traffic-light
