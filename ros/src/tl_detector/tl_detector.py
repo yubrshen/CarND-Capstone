@@ -217,14 +217,8 @@ class TLDetector(WaypointTracker):
 
     def loop(self):
         while not rospy.is_shutdown():
-            rate = rospy.Rate(2)                # in initialization loop less frequent
-            if not self.ready:
-                import time
-                start_time = time.time()
-                self.preprocess()
-                rospy.loginfo("preprocess in tl_detector: {}".format(time.time()-start_time))
-            else:
-                rate = rospy.Rate(self.loop_freq)
+            rate = rospy.Rate(self.loop_freq)
+            if self.ready:
                 if self.camera_image is not None:
                     self.process_camera_image()
                 else:               # self.camera_image is None
@@ -242,6 +236,7 @@ class TLDetector(WaypointTracker):
                         # end of if ((dist is None) or (self.admissible_distance_for_image <= dist))
                     # end of if (self.image_subscriber is None)
                 # end of if self.camera_image is not None
+            # end of if self.ready
             rate.sleep()
         # end of while not rospy.is_shutdow()
 

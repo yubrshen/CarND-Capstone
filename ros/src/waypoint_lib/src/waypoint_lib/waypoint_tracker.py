@@ -90,8 +90,10 @@ class WaypointTracker(object):
             self.subscriber_waypoints = None
             self.base_waypoints = msg.waypoints # changed, equivalent
             self.base_waypoints_num = len(self.base_waypoints) # changed, equivalent
-            rospy.loginfo(("the number of elements in self.base_waypoints: {}"+
-                          " when received and processed the /base_waypoints message").format(len(self.base_waypoints)))
+            # rospy.loginfo(("the number of elements in self.base_waypoints: {}"+
+            #               " when received and processed the /base_waypoints message").format(len(self.base_waypoints)))
+            self.preprocess()       # compute the distances and the light waypoint indices
+            self.ready = True
         # end of if self.base_waypoints is None
 
     def preprocess(self):

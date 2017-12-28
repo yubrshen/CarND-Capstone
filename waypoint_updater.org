@@ -736,19 +736,11 @@ the velocitise have been calculated, thus no need to have the policy to calculat
   def loop(self):
       rate = rospy.Rate(2)                # in initialization loop less frequent
       while not rospy.is_shutdown():
-          if not self.ready:
-              import time
-              start_time = time.time()
-              self.preprocess()
-              spent_time = time.time() - start_time
-              rospy.loginfo("The time of preprocess: {}".format(int(spent_time)))
-          else:
-              rate = rospy.Rate(self.loop_freq)
-              if self.base_waypoints is not None and self.pose is not None:
-                  <<process-pose>>
-                  self.pose = None        # indicating this message has been processed
-              # end of if self.base_waypoints is not None and self.pose is not None
-          # end of if self.ready
+          rate = rospy.Rate(self.loop_freq)
+          if self.ready and self.pose:
+              <<process-pose>>
+              self.pose = None        # indicating this message has been processed
+          # end of if self.ready and self.pose
           rate.sleep()
       # end of while not rospy.is_shutdow()
 #+END_SRC
