@@ -101,22 +101,10 @@ class WaypointTracker(object):
             # process the waypoints here
             self.dist_to_here_from_start = []
     
-            dist = 0
-            dist_so_far = 0
-            self.shortest_dist_to_next_waypoint = 0
-            for i in range(self.base_waypoints_num):
-                dist_so_far += dist
-                self.dist_to_here_from_start.append(dist_so_far)
-                # distance to the next waypoint
-                if (i < self.base_waypoints_num-1):
-                    dist = (
-                        self.distance_two_indices(self.base_waypoints,
-                                                  i, (i+1) % self.base_waypoints_num))
-                # end of if (i < self.base_waypoints_num-1)
-                if (dist < self.shortest_dist_to_next_waypoint):
-                    self.shortest_dist_to_next_waypoint = dist
-                # end of if (dist < self.shortest_dist_to_next_waypoint)
-            # end of for i in range(self.base_waypoints_num - 1)
+            self.dist = 0
+            self.dist_so_far = 0
+            self.last_index = -1
+            #self.shortest_dist_to_next_waypoint = 0
     
             # Construct the map, self.waypoint_to_light from a waypoint index to the traffic light
             # in terms of waypoint index
@@ -170,6 +158,29 @@ class WaypointTracker(object):
             # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
     
         # end of if self.base_waypoints
+    
+    def distances_upto(self, end):
+        if (end < self.last_index + 1):
+            # len(self.dist_to_here_from_start) == self.last_index + 1
+            return                  # no need to compute additional
+        else:
+            upto = end
+        # end of if (end <= self.last_index)
+    
+        for i in range(self.last_index+1, min(upto+1, self.base_waypoints_num)):
+            self.dist_so_far += self.dist
+            self.dist_to_here_from_start.append(self.dist_so_far)
+            # distance to the next waypoint
+            if (i < self.base_waypoints_num-1):
+                self.dist = (
+                    self.distance_two_indices(self.base_waypoints,
+                                              i, (i+1) % self.base_waypoints_num))
+            # end of if (i < self.base_waypoints_num-1)
+        # if (dist < self.shortest_dist_to_next_waypoint):
+        #     self.shortest_dist_to_next_waypoint = dist
+        # # end of if (dist < self.shortest_dist_to_next_waypoint)
+        # end of for i in range(self.last_index+1, min(upto+1, self.base_waypoints_num))
+        self.last_index = upto      # the last index having distance computed
 
     def get_closest_waypoint(self, pose):
         if self.base_waypoints_num is not None:
@@ -213,7 +224,12 @@ class WaypointTracker(object):
             start, end = wp2, wp1
         # end of if (wp1 < wp2)
     
-        dist = self.dist_to_here_from_start[end] - self.dist_to_here_from_start[start]
+        self.distances_upto(end) # make sure the required distances are available
+        try:
+            dist = self.dist_to_here_from_start[end] - self.dist_to_here_from_start[start]
+        except IndexError as ex:
+            rospy.info("Index out of range: distances available: {}; distances required up to: {}".format(len(self.dist_to_here_from_start), end))
+            raise(ex)
         return dist
 
     def distance_two_indices(self, waypoints, i, j):
