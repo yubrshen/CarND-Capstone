@@ -137,32 +137,32 @@ class WaypointUpdater(WaypointTracker):
                                 # end of for i in range(self.car_index, self.traffic_waypoint)
                                 final_waypoints = self.decelerate(self.car_index, light_index_or_last, final_waypoints)
                             # end of if (self.car_index <= light_index_or_last)
-                            log_update_state(car_index=self.car_index,
-                                             light_index_or_last=light_index_or_last,
-                                             if_RED="RED" if self.traffic_light_red else "not-RED",
-                                             dist_to_light=tl_dist,
-                                             min_stop_dist=min_stop_dist,
-                                             current_velocity=self.current_velocity,
-                                             comment="within stop dist., decelerate")
+                            # log_update_state(car_index=self.car_index,
+                            #                  light_index_or_last=light_index_or_last,
+                            #                  if_RED="RED" if self.traffic_light_red else "not-RED",
+                            #                  dist_to_light=tl_dist,
+                            #                  min_stop_dist=min_stop_dist,
+                            #                  current_velocity=self.current_velocity,
+                            #                  comment="within stop dist., decelerate")
                         else:                   # too far to brake
                             final_waypoints = assemble_final_waypoints()
-                            log_update_state(car_index=self.car_index,
-                                             light_index_or_last=light_index_or_last,
-                                             if_RED="RED" if self.traffic_light_red else "not-RED",
-                                             dist_to_light=tl_dist,
-                                             min_stop_dist=min_stop_dist,
-                                             current_velocity=self.current_velocity,
-                                             comment="too far to brake, no slow down")
+                            # log_update_state(car_index=self.car_index,
+                            #                  light_index_or_last=light_index_or_last,
+                            #                  if_RED="RED" if self.traffic_light_red else "not-RED",
+                            #                  dist_to_light=tl_dist,
+                            #                  min_stop_dist=min_stop_dist,
+                            #                  current_velocity=self.current_velocity,
+                            #                  comment="too far to brake, no slow down")
                         # end of if (tl_dist < min_stop_dist)
                     else:                       # no traffic light ahead or no turning red light
                         final_waypoints = assemble_final_waypoints()
-                        log_update_state(car_index=self.car_index,
-                                         light_index_or_last=light_index_or_last,
-                                         if_RED="RED" if self.traffic_light_red else "not-RED",
-                                         dist_to_light=tl_dist,
-                                         min_stop_dist=min_stop_dist,
-                                         current_velocity=self.current_velocity,
-                                         comment="no red traffic light ahead, keep the curr. vel.")
+                        # log_update_state(car_index=self.car_index,
+                        #                  light_index_or_last=light_index_or_last,
+                        #                  if_RED="RED" if self.traffic_light_red else "not-RED",
+                        #                  dist_to_light=tl_dist,
+                        #                  min_stop_dist=min_stop_dist,
+                        #                  current_velocity=self.current_velocity,
+                        #                  comment="no red traffic light ahead, keep the curr. vel.")
                     # end of ((self.traffic_waypoint is not None) and
                     # (self.car_index <= self.traffic_waypoint) and
                     # (self.traffic_light_red or (light_index_or_last == (len(self.base_waypoints)-1))))

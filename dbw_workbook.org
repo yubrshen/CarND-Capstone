@@ -581,7 +581,7 @@ In the context of __init__, subscribe to message to get needed updates.
 #+BEGIN_SRC python :noweb tangle :tangle
   rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1)
   rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size=1)
-  rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
+  rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=10)
 #+END_SRC
 
 
