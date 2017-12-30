@@ -193,7 +193,7 @@ class WaypointTracker(object):
             # deal with the case where there is no waypoint in front
             # rospy.loginfo("index of the waypoint found in front: {}; related x_local: {}".format(i, x_local))
             if (local_x < 0):
-                rospy.loginf("No waypoint in front found.")
+                rospy.loginfo("No waypoint in front found.")
                 if (5 < (len(self.base_waypoints) - self.car_index)):
                     rospy.loginfo("There is plenty of waypoints remaining.")
             if 0 < local_x: self.car_index = i
