@@ -28,7 +28,6 @@ A super-class for both WaypointTracker and TLDetector
 
   <<get_yaw>>
 
-  <<to_local_coordinates>>
 
   <<waypoint_to_light_f>>
 
@@ -54,6 +53,8 @@ A super-class for both WaypointTracker and TLDetector
       <<pre-process-base-waypoints>>
 
       <<get_closest_waypoint>>
+
+      <<to_local_coordinates>>
 
       <<distance>>
 
@@ -286,19 +287,15 @@ It only tries to find the closest in distance, regardless of orientation.
 #+BEGIN_SRC python :noweb tangle :tangle
   def get_closest_waypoint(self, pose):
       if self.base_waypoints_num is not None:
-          current_pose = pose.position
+          self.current_pose = pose.position
           current_orientation = pose.orientation
-          yaw = get_yaw(current_orientation)
+          self.current_yaw = get_yaw(current_orientation)
 
           # Compute the waypoints ahead of the current_pose
-          SUFFICIENT_FORWARD_DELTA = 0.0  # the next waypoint should be sufficiently forward
-          # tried to making SUFFICIENT_FORWARD_DELTA 0.3,
-          # then it could correct the problem of off track but would run through red lights
-          # before SUFFICIENT_FORWARD_DELTA = 0.0
           local_x = -1
           i = self.car_index - 1 if self.car_index is not None else -1
           while (((i+1) < (self.base_waypoints_num-1)) and
-                 (local_x <= SUFFICIENT_FORWARD_DELTA)):
+                 (local_x <= 0)):
               i = (i + 1) # % self.base_waypoints_num
               # rospy.loginfo('index of i, searching for the nearest waypoint in front: %r' % i)
               try:
@@ -309,7 +306,7 @@ It only tries to find the closest in distance, regardless of orientation.
               # end of try
 
               w_pos = waypoint.pose.pose.position
-              local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
+              local_x, local_y = self.to_local_coordinates(self.current_pose.x, self.current_pose.y, self.current_yaw,
                                                       w_pos.x, w_pos.y)
           # end of while (local_x <= 0)
           self.car_index = i
@@ -369,7 +366,7 @@ This following one works based on the experiment.
 
    #+NAME:to_local_coordinates
    #+BEGIN_SRC python :noweb tangle :tangle
-     def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
+     def to_local_coordinates(self, local_origin_x, local_origin_y, rotation, x, y):
          """
          compute the local coordinates for the global x, y coordinates values,
          given the local_origin_x, local_origin_y, and the rotation of the local x-axis.

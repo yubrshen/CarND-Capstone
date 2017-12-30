@@ -18,22 +18,6 @@ def get_yaw(orientation):
     yaw = euler[2]
     return yaw
 
-def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
-    """
-    compute the local coordinates for the global x, y coordinates values,
-    given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
-    Assume the rotation is radius
-    """
-    shift_x = x - local_origin_x
-    shift_y = y - local_origin_y
-
-    cos_rotation = math.cos(rotation)
-    sin_rotation = math.sin(rotation)
-
-    local_x =  cos_rotation*shift_x + sin_rotation*shift_y
-    local_y = -sin_rotation*shift_x + cos_rotation*shift_y  # according to John Chen's
-    # assuming the orientation angle clockwise being positive
-    return local_x, local_y
 
 def waypoint_to_light_f(lights_to_waypoint_indices, base_waypoints_num):
     # implementation
@@ -184,19 +168,15 @@ class WaypointTracker(object):
 
     def get_closest_waypoint(self, pose):
         if self.base_waypoints_num is not None:
-            current_pose = pose.position
+            self.current_pose = pose.position
             current_orientation = pose.orientation
-            yaw = get_yaw(current_orientation)
+            self.current_yaw = get_yaw(current_orientation)
     
             # Compute the waypoints ahead of the current_pose
-            SUFFICIENT_FORWARD_DELTA = 0.0  # the next waypoint should be sufficiently forward
-            # tried to making SUFFICIENT_FORWARD_DELTA 0.3,
-            # then it could correct the problem of off track but would run through red lights
-            # before SUFFICIENT_FORWARD_DELTA = 0.0
             local_x = -1
             i = self.car_index - 1 if self.car_index is not None else -1
             while (((i+1) < (self.base_waypoints_num-1)) and
-                   (local_x <= SUFFICIENT_FORWARD_DELTA)):
+                   (local_x <= 0)):
                 i = (i + 1) # % self.base_waypoints_num
                 # rospy.loginfo('index of i, searching for the nearest waypoint in front: %r' % i)
                 try:
@@ -207,7 +187,7 @@ class WaypointTracker(object):
                 # end of try
     
                 w_pos = waypoint.pose.pose.position
-                local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
+                local_x, local_y = self.to_local_coordinates(self.current_pose.x, self.current_pose.y, self.current_yaw,
                                                         w_pos.x, w_pos.y)
             # end of while (local_x <= 0)
             self.car_index = i
@@ -216,6 +196,23 @@ class WaypointTracker(object):
             # use local_x, and y to indicate the position relative to the current pose
         # end of if self.base_waypoints_num is not None
         return None
+
+    def to_local_coordinates(self, local_origin_x, local_origin_y, rotation, x, y):
+        """
+        compute the local coordinates for the global x, y coordinates values,
+        given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
+        Assume the rotation is radius
+        """
+        shift_x = x - local_origin_x
+        shift_y = y - local_origin_y
+    
+        cos_rotation = math.cos(rotation)
+        sin_rotation = math.sin(rotation)
+    
+        local_x =  cos_rotation*shift_x + sin_rotation*shift_y
+        local_y = -sin_rotation*shift_x + cos_rotation*shift_y  # according to John Chen's
+        # assuming the orientation angle clockwise being positive
+        return local_x, local_y
 
     def distance(self, wp1, wp2):
         if (wp1 < wp2):

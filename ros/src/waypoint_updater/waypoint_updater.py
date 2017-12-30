@@ -120,12 +120,26 @@ class WaypointUpdater(WaypointTracker):
                                            else len(self.base_waypoints)-1)
                 
                     tl_dist = (self.distance(self.car_index, light_index_or_last))
-                
-                    def assemble_final_waypoints():  # for the case where only need to have the first element deepcopy'ed
-                        return (
-                            [copy.deepcopy(self.base_waypoints[self.car_index])] +
-                            self.base_waypoints[self.car_index+1: (self.car_index + LOOKAHEAD_WPS)]
-                            if self.car_index < len(self.base_waypoints)-1 else [])
+                    # The following function, especially the mechanism of adding the angular velocity
+                    # only applies to the case, when there is no need to decelerate!
+                    def assemble_final_waypoints_non_decelerate():  # for the case where only need to have the first element deepcopy'ed
+                        # return (
+                        #     [copy.deepcopy(self.base_waypoints[self.car_index])] +
+                        #     self.base_waypoints[self.car_index+1: (self.car_index + LOOKAHEAD_WPS)]
+                        #     if self.car_index < len(self.base_waypoints)-1 else [])
+                        final_waypoints = []
+                        for i in range(self.car_index, min(self.car_index + LOOKAHEAD_WPS, len(self.base_waypoints))):
+                            waypoint = (copy.deepcopy(self.base_waypoints[i]))
+                            local_x, local_y = self.to_local_coordinates(\
+                                                                         self.current_pose.x, \
+                                                                         self.current_pose.y, \
+                                                                         self.current_yaw, \
+                                                                         waypoint.pose.pose.position.x, \
+                                                                         waypoint.pose.pose.position.y)
+                            waypoint.twist.twist.angular.z = math.atan2(local_y, local_x)
+                            final_waypoints.append(waypoint)
+                        # end of for i in range(self.car_index, min(self.car_index + LOOKAHEAD_WPS, len(self.base_waypoints)))
+                        return final_waypoints
                 
                     if ((self.car_index <= light_index_or_last) and
                         (self.traffic_light_red or (light_index_or_last == (len(self.base_waypoints)-1)))):
@@ -145,7 +159,7 @@ class WaypointUpdater(WaypointTracker):
                             #                  current_velocity=self.current_velocity,
                             #                  comment="within stop dist., decelerate")
                         else:                   # too far to brake
-                            final_waypoints = assemble_final_waypoints()
+                            final_waypoints = assemble_final_waypoints_non_decelerate()
                             # log_update_state(car_index=self.car_index,
                             #                  light_index_or_last=light_index_or_last,
                             #                  if_RED="RED" if self.traffic_light_red else "not-RED",
@@ -155,7 +169,7 @@ class WaypointUpdater(WaypointTracker):
                             #                  comment="too far to brake, no slow down")
                         # end of if (tl_dist < min_stop_dist)
                     else:                       # no traffic light ahead or no turning red light
-                        final_waypoints = assemble_final_waypoints()
+                        final_waypoints = assemble_final_waypoints_non_decelerate()
                         # log_update_state(car_index=self.car_index,
                         #                  light_index_or_last=light_index_or_last,
                         #                  if_RED="RED" if self.traffic_light_red else "not-RED",
@@ -169,7 +183,7 @@ class WaypointUpdater(WaypointTracker):
                 
                     # adjust the angular velocity for final_waypoints[0]
                     # in order to return to the track when the current pose is off track
-                    final_waypoints[0].twist.twist.angular.z = math.atan2(local_y, local_x)
+                    # final_waypoints[0].twist.twist.angular.z = math.atan2(local_y, local_x)
                     #turning_coff = 1.0
                     # final_waypoints[0].twist.twist.linear.x = ( # reduce the speed proportional to the offset angle
                     #     final_waypoints[0].twist.twist.linear.x*(1.0/(1+turning_coff*abs(final_waypoints[0].twist.twist.angular.z))))
