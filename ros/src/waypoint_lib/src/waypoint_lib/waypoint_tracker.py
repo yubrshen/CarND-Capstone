@@ -190,9 +190,16 @@ class WaypointTracker(object):
                 local_x, local_y = self.to_local_coordinates(self.current_pose.x, self.current_pose.y, self.current_yaw,
                                                         w_pos.x, w_pos.y)
             # end of while (local_x <= 0)
-            self.car_index = i
+            # deal with the case where there is no waypoint in front
+            # rospy.loginfo("index of the waypoint found in front: {}; related x_local: {}".format(i, x_local))
+            if (local_x < 0):
+                rospy.loginf("No waypoint in front found.")
+                if (5 < (len(self.base_waypoints) - self.car_index)):
+                    rospy.loginfo("There is plenty of waypoints remaining.")
+            if 0 < local_x: self.car_index = i
+            # only when 0 < local_x, then the i can be considered the next car_index
             # make the update car_index atomic with the search of the next one.
-            return (i, local_x, local_y)
+            return (self.car_index, local_x, local_y)
             # use local_x, and y to indicate the position relative to the current pose
         # end of if self.base_waypoints_num is not None
         return None
