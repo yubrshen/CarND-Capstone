@@ -15,6 +15,18 @@ Sumanth Reddy Kaliki   | sumanth818@gmail.com     |
 Sahil Juneja           | sahiljuneja17@gmail.com  |
 Hector Sanchez Pajares | hector.spc@gmail.com     |
 
+# LIMITATION
+
+When simulator is started and "Manual" unchecked before the ROS nodes are started and let to finish initialization. 
+The message of "dbw_enabled" might be lost. Then the car would not receive /vehicle/throttle_cmd, etc. 
+The car would not move along the track properly. 
+
+To overcome the potential problem, please start ROS nodes and let them finish initialization, then start the simulator, and then uncheck "Manual". 
+Likewise, to drive the real car, the ROS nodes should also be started and let to initialize first then engage dbw to drive. 
+
+This ends the limitation. 
+
+# Project Descriptions 
 
 The project bases on the architecture proposed by Udacity. It uses ROS as the implementation framework. 
 The project implements the following ROS nodes:
